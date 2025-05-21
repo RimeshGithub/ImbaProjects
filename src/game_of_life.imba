@@ -1,3 +1,5 @@
+# change to <script type="module" src="./src/game_of_life.imba"></script> in index.html to run this code   
+
 let size = 25
 let running = false
 let intervalId = null
@@ -18,7 +20,7 @@ def countNeighbors(x, y)
 			count += grid[ny][nx]
 	return count
 
-tag gameof-life
+tag game-of-life
 	def toggleCell x, y
 		stop!
 		grid[y][x] = grid[y][x] == 1 ? 0 : 1
@@ -84,4 +86,4 @@ tag gameof-life
 						<input type="range" min=10 max=50 step=5 bind=size @input=(do stop!; clearGrid!)>
 						<span [w:10px]> size
 
-imba.mount <gameof-life>
+imba.mount <game-of-life>
