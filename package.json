@@ -11,6 +11,8 @@
     "vite": "^6.3.3"
   },
   "dependencies": {
+    "algebrite": "^1.4.0",
+    "chart.js": "^4.4.9",
     "chess.js": "^1.2.0",
     "expr-eval": "^2.0.2",
     "howler": "^2.2.4",
