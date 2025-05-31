@@ -1,7 +1,7 @@
 # change to <script type="module" src="./src/python_compiler.imba"></script> in index.html to run this code   
 
 global css * box-sizing:border-box 
-global css body bg:linear-gradient(120deg,#f9fbe7,#e3f2fd)
+global css body bg:linear-gradient(120deg,#f9fbe7,#e3f2fd) p:0 30px
 
 tag python-compiler
 	prop code = "print('Hello from Python!')"
@@ -9,8 +9,19 @@ tag python-compiler
 	prop pyodide = null
 	prop editor = null
 
+	# Function to load a script dynamically
+	def loadScript src
+		return new Promise(do(resolve, reject)
+			let script = document.createElement("script")
+			script.src = src
+			script.async = no
+			script.onload = resolve
+			script.onerror = reject
+			document.head.appendChild(script)
+		)
+
 	def setup
-		# Load CodeMirror core + theme CSS
+		# Load CodeMirror CSS
 		let styles = [
 			"codemirror.min.css",
 			"theme/monokai.min.css",
@@ -25,7 +36,7 @@ tag python-compiler
 			link.href = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/{s}"
 			document.head.appendChild(link)
 
-		# Load CodeMirror JS + add-ons
+		# Load CodeMirror scripts sequentially
 		let scripts = [
 			"codemirror.min.js",
 			"mode/python/python.min.js",
@@ -39,9 +50,42 @@ tag python-compiler
 		]
 
 		for s in scripts
-			let script = document.createElement("script")
-			script.src = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/{s}"
-			document.head.appendChild(script)
+			await loadScript("https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/{s}")
+
+		# Initialize CodeMirror
+		editor = window.CodeMirror(document.getElementById("editor"), {
+			value: code,
+			mode: "python",
+			theme: "default",
+			lineNumbers: true,
+			lineWrapping: true,
+			styleActiveLine: true,
+			matchBrackets: true,
+			autoCloseBrackets: true,
+			showCursorWhenSelecting: true,
+			scrollbarStyle: "native",
+			indentUnit: 4,
+			tabSize: 4,
+			indentWithTabs: false,
+			smartIndent: true,
+			extraKeys: {
+				"Ctrl-Space": "autocomplete",
+				"Tab": "indentMore",
+				"Shift-Tab": "indentLess"
+			},
+			gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+			foldGutter: true,
+			readOnly: false,
+			hintOptions: {
+				completeSingle: false
+			},
+			autofocus: false,
+			cursorBlinkRate: 530,
+			cursorScrollMargin: 2,
+			historyEventDelay: 1250
+		})
+
+		editor.on("change", do code = editor.getValue())
 
 		# Load Pyodide
 		let pyodideScript = document.createElement("script")
@@ -50,6 +94,7 @@ tag python-compiler
 			globalThis.loadPyodide().then do(pyo)
 				pyodide = pyo
 
+				# Register a JS module for Python's input()
 				pyodide.registerJsModule("jsinput", {
 					prompt: do(text) window.prompt(text)
 				})
@@ -57,43 +102,6 @@ tag python-compiler
 				output = "Ready to run Python code"
 				imba.commit!
 		document.head.appendChild(pyodideScript)
-
-		# Initialize CodeMirror once available
-		setTimeout(&, 0) do
-			if window.CodeMirror
-				editor = window.CodeMirror(document.getElementById("editor"), {
-					value: code,
-					mode: "python",
-					theme: "default",
-					lineNumbers: true,
-					lineWrapping: true,
-					styleActiveLine: true,
-					matchBrackets: true,
-					autoCloseBrackets: true,
-					showCursorWhenSelecting: true,
-					scrollbarStyle: "native",
-					indentUnit: 4,
-					tabSize: 4,
-					indentWithTabs: false,
-					smartIndent: true,
-					extraKeys: {
-						"Ctrl-Space": "autocomplete",
-						"Tab": "indentMore",
-						"Shift-Tab": "indentLess"
-					},
-					gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-					foldGutter: true,
-					readOnly: false,
-					hintOptions: {
-						completeSingle: false
-					},
-					autofocus: false,
-					cursorBlinkRate: 530,
-					cursorScrollMargin: 2,
-					historyEventDelay: 1250
-				})
-
-				editor.on("change", do code = editor.getValue())
 
 	def runCode
 		if pyodide
